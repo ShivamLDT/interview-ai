@@ -12,13 +12,6 @@ from pydantic import BaseModel, Field
 # Enums
 # ============================================================================
 
-class ExperienceLevel(str, Enum):
-    """Candidate experience level."""
-    JUNIOR = "junior"
-    MID = "mid"
-    SENIOR = "senior"
-
-
 class Difficulty(str, Enum):
     """Question difficulty level."""
     EASY = "easy"
@@ -38,9 +31,11 @@ class InterviewStatus(str, Enum):
 
 class StartInterviewRequest(BaseModel):
     """Request model for starting a new interview."""
-    experience_level: ExperienceLevel = Field(
+    experience_years: int = Field(
         ...,
-        description="Candidate's experience level"
+        ge=0,
+        le=50,
+        description="Candidate's years of experience (0 for fresher)"
     )
     subject: str = Field(
         ...,
@@ -154,7 +149,7 @@ class QuestionAnswerRecord(BaseModel):
 
 class InterviewConfig(BaseModel):
     """Interview configuration."""
-    experience_level: ExperienceLevel
+    experience_years: int
     subject: str
     difficulty: Difficulty
     num_questions: int
@@ -212,7 +207,7 @@ class FinalReportResponse(BaseModel):
     )
     total_questions: int
     questions_answered: int
-    experience_level: ExperienceLevel
+    experience_years: int
     subject: str
     detailed_feedback: str = Field(
         ...,

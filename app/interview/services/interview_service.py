@@ -8,7 +8,6 @@ from uuid import UUID, uuid4
 
 from app.interview.models import (
     Difficulty,
-    ExperienceLevel,
     FinalReportResponse,
     InterviewConfig,
     InterviewQuestion,
@@ -93,7 +92,7 @@ class InterviewService:
         
         # Create interview configuration
         config = InterviewConfig(
-            experience_level=request.experience_level,
+            experience_years=request.experience_years,
             subject=request.subject,
             difficulty=request.difficulty,
             num_questions=request.num_questions,
@@ -101,7 +100,7 @@ class InterviewService:
         
         # Generate first question
         first_question = await self.openai.generate_question(
-            experience_level=request.experience_level,
+            experience_years=request.experience_years,
             subject=request.subject,
             difficulty=request.difficulty,
             question_number=1,
@@ -181,7 +180,7 @@ class InterviewService:
         evaluation = await self.openai.evaluate_answer(
             question=current_record.question,
             answer=request.answer,
-            experience_level=interview.config.experience_level,
+            experience_years=interview.config.experience_years,
             subject=interview.config.subject,
         )
         
@@ -212,7 +211,7 @@ class InterviewService:
             
             # Generate next question
             next_question = await self.openai.generate_question(
-                experience_level=interview.config.experience_level,
+                experience_years=interview.config.experience_years,
                 subject=interview.config.subject,
                 difficulty=adaptive_difficulty,
                 question_number=interview.current_question_num + 1,
@@ -284,7 +283,7 @@ class InterviewService:
         
         # Generate report using OpenAI
         report_data = await self.openai.generate_final_report(
-            experience_level=interview.config.experience_level,
+            experience_years=interview.config.experience_years,
             subject=interview.config.subject,
             records=answered_records,
         )
@@ -313,7 +312,7 @@ class InterviewService:
             overall_score=report_data.get("overall_score", 0),
             total_questions=interview.config.num_questions,
             questions_answered=len(answered_records),
-            experience_level=interview.config.experience_level,
+            experience_years=interview.config.experience_years,
             subject=interview.config.subject,
             detailed_feedback=report_data.get("detailed_feedback", ""),
             strong_areas=report_data.get("strong_areas", []),

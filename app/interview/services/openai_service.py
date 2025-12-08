@@ -14,7 +14,6 @@ from openai import AsyncOpenAI
 from app.core.config import settings
 from app.interview.models import (
     Difficulty,
-    ExperienceLevel,
     InterviewQuestion,
     QuestionAnswerRecord,
     QuestionEvaluation,
@@ -96,9 +95,20 @@ class OpenAIService:
         content = response.choices[0].message.content or "{}"
         return json.loads(content)
     
+    def _get_experience_description(self, years: int) -> str:
+        """Convert years of experience to descriptive level."""
+        if years == 0:
+            return "Fresher (0 years) - Entry level, focus on fundamentals and basic concepts"
+        elif years <= 2:
+            return f"Junior ({years} years) - Focus on fundamentals, basic concepts, definitions"
+        elif years <= 5:
+            return f"Mid-level ({years} years) - Include design decisions, trade-offs, best practices"
+        else:
+            return f"Senior ({years} years) - Focus on architecture, system design, leadership scenarios"
+    
     def _get_question_generation_system_prompt(
         self,
-        experience_level: ExperienceLevel,
+        experience_years: int,
         subject: str,
         difficulty: Difficulty,
         question_number: int,
@@ -106,6 +116,8 @@ class OpenAIService:
         previous_records: list[QuestionAnswerRecord] | None = None,
     ) -> str:
         """Generate system prompt for question generation."""
+        
+        experience_desc = self._get_experience_description(experience_years)
         
         history_context = ""
         if previous_records:
@@ -120,7 +132,8 @@ class OpenAIService:
         return f"""You are an expert technical interviewer conducting a {subject} interview.
 
 CANDIDATE PROFILE:
-- Experience Level: {experience_level.value}
+- Experience: {experience_desc}
+- Years of Experience: {experience_years}
 - Subject: {subject}
 - Current Difficulty: {difficulty.value}
 - Question: {question_number} of {total_questions}
@@ -133,12 +146,13 @@ CRITICAL RULES:
 - Focus on concepts, theory, explanations, comparisons, and "why/how/what" questions
 
 INSTRUCTIONS:
-1. Generate a single THEORETICAL interview question appropriate for the candidate's level
+1. Generate a single THEORETICAL interview question appropriate for someone with {experience_years} years of experience
 2. Ask about concepts, definitions, comparisons, best practices, trade-offs, or explanations
-3. For {experience_level.value} candidates:
-   - Junior: Focus on fundamentals, basic concepts, definitions, "what is X?"
-   - Mid: Include design decisions, trade-offs, "why would you use X over Y?", best practices
-   - Senior: Focus on architecture concepts, system design theory, leadership scenarios, "how would you approach..."
+3. Question complexity based on experience:
+   - 0 years (Fresher): Very basic concepts, definitions, "what is X?"
+   - 1-2 years (Junior): Fundamentals, basic concepts, simple comparisons
+   - 3-5 years (Mid): Design decisions, trade-offs, "why would you use X over Y?", best practices
+   - 6+ years (Senior): Architecture concepts, system design theory, complex scenarios, "how would you approach..."
 4. Adapt difficulty based on previous performance (if available)
 5. Cover different aspects of {subject} across questions
 6. Be specific and clear in your questions
@@ -168,15 +182,18 @@ Generate only the JSON response, no additional text."""
 
     def _get_evaluation_system_prompt(
         self,
-        experience_level: ExperienceLevel,
+        experience_years: int,
         subject: str,
     ) -> str:
         """Generate system prompt for answer evaluation."""
         
+        experience_desc = self._get_experience_description(experience_years)
+        
         return f"""You are an expert technical interviewer evaluating a candidate's answer.
 
 EVALUATION CONTEXT:
-- Candidate Level: {experience_level.value}
+- Candidate Experience: {experience_desc}
+- Years of Experience: {experience_years}
 - Subject: {subject}
 
 EVALUATION CRITERIA:
@@ -192,8 +209,8 @@ SCORING GUIDELINES:
 - 8-9: Good - Strong understanding, minor improvements possible
 - 10: Excellent - Comprehensive, accurate, demonstrates expertise
 
-Be fair but thorough. Consider the candidate's experience level when evaluating.
-A junior candidate is not expected to have the depth of a senior candidate.
+Be fair but thorough. Consider the candidate's {experience_years} years of experience when evaluating.
+A fresher/junior candidate is not expected to have the depth of a senior candidate.
 
 RESPONSE FORMAT (JSON):
 {{
@@ -211,28 +228,31 @@ Generate only the JSON response, no additional text."""
 
     def _get_final_report_system_prompt(
         self,
-        experience_level: ExperienceLevel,
+        experience_years: int,
         subject: str,
     ) -> str:
         """Generate system prompt for final report generation."""
         
+        experience_desc = self._get_experience_description(experience_years)
+        
         return f"""You are an expert technical interviewer generating a comprehensive assessment report.
 
 ASSESSMENT CONTEXT:
-- Candidate Level: {experience_level.value}
+- Candidate Experience: {experience_desc}
+- Years of Experience: {experience_years}
 - Subject: {subject}
 
 REPORT REQUIREMENTS:
 1. Provide an overall assessment considering all answers
 2. Identify patterns in strengths and weaknesses
 3. Give actionable, specific recommendations for improvement
-4. Consider the candidate's experience level in your assessment
+4. Consider the candidate's {experience_years} years of experience in your assessment
 5. Be constructive and professional
 
 HIRING RECOMMENDATION GUIDELINES:
-- Based on overall score and consistency:
+- Based on overall score and consistency for someone with {experience_years} years experience:
   - 8-10 average: "Strong Hire" - Candidate exceeds expectations
-  - 6-7 average: "Hire" - Candidate meets expectations for {experience_level.value} level
+  - 6-7 average: "Hire" - Candidate meets expectations for their experience level
   - 4-5 average: "Conditional Hire" - Consider for lower-level role or with mentoring
   - 1-3 average: "No Hire" - Does not meet minimum requirements
 
@@ -250,7 +270,7 @@ Generate only the JSON response, no additional text."""
 
     async def generate_question(
         self,
-        experience_level: ExperienceLevel,
+        experience_years: int,
         subject: str,
         difficulty: Difficulty,
         question_number: int,
@@ -261,7 +281,7 @@ Generate only the JSON response, no additional text."""
         Generate an interview question based on context.
         
         Args:
-            experience_level: Candidate's experience level
+            experience_years: Candidate's years of experience
             subject: Interview subject
             difficulty: Target difficulty level
             question_number: Current question number
@@ -272,7 +292,7 @@ Generate only the JSON response, no additional text."""
             Generated interview question
         """
         system_prompt = self._get_question_generation_system_prompt(
-            experience_level=experience_level,
+            experience_years=experience_years,
             subject=subject,
             difficulty=difficulty,
             question_number=question_number,
@@ -299,7 +319,7 @@ Generate only the JSON response, no additional text."""
         self,
         question: InterviewQuestion,
         answer: str,
-        experience_level: ExperienceLevel,
+        experience_years: int,
         subject: str,
     ) -> QuestionEvaluation:
         """
@@ -308,14 +328,14 @@ Generate only the JSON response, no additional text."""
         Args:
             question: The interview question
             answer: Candidate's answer
-            experience_level: Candidate's experience level
+            experience_years: Candidate's years of experience
             subject: Interview subject
             
         Returns:
             Evaluation with score and feedback
         """
         system_prompt = self._get_evaluation_system_prompt(
-            experience_level=experience_level,
+            experience_years=experience_years,
             subject=subject,
         )
         
@@ -346,7 +366,7 @@ Evaluate this answer."""
     
     async def generate_final_report(
         self,
-        experience_level: ExperienceLevel,
+        experience_years: int,
         subject: str,
         records: list[QuestionAnswerRecord],
     ) -> dict[str, Any]:
@@ -354,7 +374,7 @@ Evaluate this answer."""
         Generate a comprehensive final report.
         
         Args:
-            experience_level: Candidate's experience level
+            experience_years: Candidate's years of experience
             subject: Interview subject
             records: All Q&A records with evaluations
             
@@ -362,7 +382,7 @@ Evaluate this answer."""
             Final report data dictionary
         """
         system_prompt = self._get_final_report_system_prompt(
-            experience_level=experience_level,
+            experience_years=experience_years,
             subject=subject,
         )
         
