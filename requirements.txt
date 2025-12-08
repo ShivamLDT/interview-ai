@@ -1,0 +1,29 @@
+# FastAPI and Server
+fastapi==0.109.2
+uvicorn[standard]==0.27.1
+pydantic-settings==2.1.0
+
+# FastAPI Users - Authentication
+fastapi-users[sqlalchemy]==13.0.0
+
+# Database - SQLite Async
+aiosqlite==0.19.0
+sqlalchemy[asyncio]==2.0.25
+
+# Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.1.2
+
+# Environment Variables
+python-dotenv==1.0.1
+
+# Email validation
+email-validator==2.1.0.post1
+
+# OpenAI SDK
+openai==1.12.0
+
+# Development
+httpx==0.26.0
+
