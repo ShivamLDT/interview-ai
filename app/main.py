@@ -22,8 +22,12 @@ async def lifespan(app: FastAPI):
     Startup: Create database tables
     Shutdown: Cleanup resources if needed
     """
-    # Startup
-    await create_db_and_tables()
+    # Startup - gracefully handle database initialization
+    try:
+        await create_db_and_tables()
+    except Exception as e:
+        # Log but don't crash - allows serverless deployment without DB
+        print(f"Database initialization skipped: {e}")
     yield
     # Shutdown (add cleanup logic here if needed)
 

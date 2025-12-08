@@ -27,8 +27,8 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     
-    # CORS
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:8000"]
+    # CORS - Use ["*"] to allow all origins
+    cors_origins: list[str] = ["*"]
     
     # OpenAI Configuration
     openai_api_key: str = ""
