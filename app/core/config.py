@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     # Security
     secret_key: str = "your-super-secret-key-change-in-production"
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 30
+    access_token_expire_minutes: int = 10080  # 7 days
     
     # CORS - Use ["*"] to allow all origins
     cors_origins: list[str] = ["*"]
