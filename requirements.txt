@@ -29,7 +29,7 @@ openai==1.12.0
 websockets==12.0
 
 # File uploads
-python-multipart==0.0.9
+python-multipart==0.0.20
 
 # Development
 httpx==0.26.0
