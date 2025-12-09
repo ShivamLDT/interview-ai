@@ -4,11 +4,11 @@ uvicorn[standard]==0.27.1
 pydantic-settings==2.1.0
 
 # FastAPI Users - Authentication
-fastapi-users[sqlalchemy]==13.0.0
+fastapi-users[sqlalchemy]==14.0.1
 
 # Database - SQLite Async (local) & PostgreSQL (production)
 aiosqlite==0.20.0
-sqlalchemy[asyncio]==2.0.25
+sqlalchemy[asyncio]==2.0.36
 asyncpg==0.30.0
 
 # Security
