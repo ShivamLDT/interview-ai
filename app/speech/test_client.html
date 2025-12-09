@@ -1,0 +1,500 @@
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Speech Transcription Test</title>
+    <style>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 1.8rem;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff4757;
+            transition: all 0.3s ease;
+        }
+        
+        .status-indicator.connected {
+            background: #2ed573;
+            box-shadow: 0 0 10px #2ed573;
+        }
+        
+        .status-indicator.recording {
+            background: #ff6b6b;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+        }
+        
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+            color: white;
+        }
+        
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 107, 107, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .transcript-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            min-height: 200px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 1.5rem;
+        }
+        
+        .transcript-box h3 {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        #transcript {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .partial {
+            color: #888;
+            font-style: italic;
+        }
+        
+        .final {
+            color: #2ed573;
+        }
+        
+        .log-box {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            padding: 1rem;
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 0.75rem;
+            color: #666;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .log-box h3 {
+            font-size: 0.7rem;
+            color: #555;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .log-entry {
+            padding: 0.2rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        
+        .log-entry.error {
+            color: #ff6b6b;
+        }
+        
+        .log-entry.success {
+            color: #2ed573;
+        }
+        
+        .settings {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            align-items: center;
+        }
+        
+        .settings label {
+            font-size: 0.85rem;
+            color: #888;
+        }
+        
+        .settings select, .settings input {
+            padding: 0.5rem;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+            color: #e0e0e0;
+            font-family: inherit;
+        }
+        
+        .visualizer {
+            height: 60px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            padding: 0 1rem;
+        }
+        
+        .bar {
+            width: 4px;
+            height: 10px;
+            background: linear-gradient(to top, #667eea, #764ba2);
+            border-radius: 2px;
+            transition: height 0.05s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Real-time Speech Transcription</h1>
+        
+        <div class="status-bar">
+            <div class="status-indicator" id="statusIndicator"></div>
+            <span id="statusText">Disconnected</span>
+        </div>
+        
+        <div class="settings">
+            <label>Server:</label>
+            <input type="text" id="serverUrl" value="ws://localhost:8000/api/speech/realtime" style="width: 300px;">
+            <label>Language:</label>
+            <select id="language">
+                <option value="">Auto-detect</option>
+                <option value="en">English</option>
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+                <option value="de">German</option>
+                <option value="it">Italian</option>
+                <option value="pt">Portuguese</option>
+                <option value="zh">Chinese</option>
+                <option value="ja">Japanese</option>
+                <option value="ko">Korean</option>
+                <option value="hi">Hindi</option>
+            </select>
+        </div>
+        
+        <div class="visualizer" id="visualizer">
+            <!-- Audio bars will be added here -->
+        </div>
+        
+        <div class="controls">
+            <button class="btn-primary" id="connectBtn" onclick="connect()">Connect</button>
+            <button class="btn-primary" id="startBtn" onclick="startRecording()" disabled>Start Recording</button>
+            <button class="btn-danger" id="stopBtn" onclick="stopRecording()" disabled>Stop Recording</button>
+            <button class="btn-secondary" id="clearBtn" onclick="clearTranscript()">Clear</button>
+        </div>
+        
+        <div class="transcript-box">
+            <h3>Transcript</h3>
+            <div id="transcript"></div>
+        </div>
+        
+        <div class="log-box">
+            <h3>Event Log</h3>
+            <div id="log"></div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let mediaRecorder = null;
+        let audioContext = null;
+        let analyser = null;
+        let isRecording = false;
+        
+        // Create visualizer bars
+        const visualizer = document.getElementById('visualizer');
+        for (let i = 0; i < 50; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'bar';
+            visualizer.appendChild(bar);
+        }
+        const bars = visualizer.querySelectorAll('.bar');
+        
+        function log(message, type = '') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.insertBefore(entry, logDiv.firstChild);
+        }
+        
+        function updateStatus(status, isConnected = false, isRec = false) {
+            document.getElementById('statusText').textContent = status;
+            const indicator = document.getElementById('statusIndicator');
+            indicator.classList.toggle('connected', isConnected);
+            indicator.classList.toggle('recording', isRec);
+        }
+        
+        function connect() {
+            const url = document.getElementById('serverUrl').value;
+            log(`Connecting to ${url}...`);
+            
+            ws = new WebSocket(url);
+            
+            ws.onopen = () => {
+                log('WebSocket connected', 'success');
+                updateStatus('Connected', true);
+                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('startBtn').disabled = false;
+                
+                // Send language config if selected
+                const lang = document.getElementById('language').value;
+                if (lang) {
+                    ws.send(JSON.stringify({ type: 'config', language: lang }));
+                    log(`Set language: ${lang}`);
+                }
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                log(`Received: ${data.type}`);
+                
+                switch (data.type) {
+                    case 'ready':
+                        log('Server ready for audio', 'success');
+                        break;
+                    case 'transcript':
+                        appendTranscript(data.text, data.is_final);
+                        break;
+                    case 'speech_started':
+                        log('Speech detected');
+                        break;
+                    case 'speech_stopped':
+                        log('Speech ended');
+                        break;
+                    case 'error':
+                        log(`Error: ${data.message}`, 'error');
+                        break;
+                    case 'closed':
+                        log('Session closed');
+                        break;
+                }
+            };
+            
+            ws.onclose = () => {
+                log('WebSocket disconnected');
+                updateStatus('Disconnected', false);
+                document.getElementById('connectBtn').disabled = false;
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = true;
+                stopRecording();
+            };
+            
+            ws.onerror = (error) => {
+                log(`WebSocket error: ${error}`, 'error');
+            };
+        }
+        
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        sampleRate: 24000,
+                        channelCount: 1,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                    } 
+                });
+                
+                // Set up audio context for visualization
+                audioContext = new AudioContext({ sampleRate: 24000 });
+                analyser = audioContext.createAnalyser();
+                const source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+                analyser.fftSize = 128;
+                
+                // Start visualization
+                visualize();
+                
+                // Use ScriptProcessor for raw PCM access
+                const scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+                source.connect(scriptProcessor);
+                scriptProcessor.connect(audioContext.destination);
+                
+                scriptProcessor.onaudioprocess = (event) => {
+                    if (!isRecording || !ws || ws.readyState !== WebSocket.OPEN) return;
+                    
+                    const inputData = event.inputBuffer.getChannelData(0);
+                    
+                    // Convert float32 to int16
+                    const pcm16 = new Int16Array(inputData.length);
+                    for (let i = 0; i < inputData.length; i++) {
+                        const s = Math.max(-1, Math.min(1, inputData[i]));
+                        pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                    }
+                    
+                    // Convert to base64
+                    const base64 = btoa(String.fromCharCode(...new Uint8Array(pcm16.buffer)));
+                    
+                    // Send to server
+                    ws.send(JSON.stringify({
+                        type: 'audio',
+                        data: base64
+                    }));
+                };
+                
+                isRecording = true;
+                updateStatus('Recording...', true, true);
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                log('Recording started', 'success');
+                
+            } catch (error) {
+                log(`Microphone error: ${error.message}`, 'error');
+            }
+        }
+        
+        function stopRecording() {
+            isRecording = false;
+            
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+            
+            updateStatus('Connected', true, false);
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            
+            // Reset visualizer
+            bars.forEach(bar => bar.style.height = '10px');
+            
+            log('Recording stopped');
+        }
+        
+        function visualize() {
+            if (!analyser || !isRecording) return;
+            
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(dataArray);
+            
+            bars.forEach((bar, i) => {
+                const value = dataArray[i] || 0;
+                const height = Math.max(10, (value / 255) * 50);
+                bar.style.height = `${height}px`;
+            });
+            
+            requestAnimationFrame(visualize);
+        }
+        
+        let currentPartial = null;
+        
+        function appendTranscript(text, isFinal) {
+            const transcriptDiv = document.getElementById('transcript');
+            
+            if (isFinal) {
+                // Remove partial if exists
+                if (currentPartial) {
+                    currentPartial.remove();
+                    currentPartial = null;
+                }
+                
+                // Add final text
+                const span = document.createElement('span');
+                span.className = 'final';
+                span.textContent = text + ' ';
+                transcriptDiv.appendChild(span);
+            } else {
+                // Update or create partial
+                if (!currentPartial) {
+                    currentPartial = document.createElement('span');
+                    currentPartial.className = 'partial';
+                    transcriptDiv.appendChild(currentPartial);
+                }
+                currentPartial.textContent = text;
+            }
+        }
+        
+        function clearTranscript() {
+            document.getElementById('transcript').innerHTML = '';
+            currentPartial = null;
+            log('Transcript cleared');
+        }
+    </script>
+</body>
+</html>
+

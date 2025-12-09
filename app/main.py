@@ -51,6 +51,7 @@ A FastAPI backend for conducting AI-powered technical interviews.
 - 📝 **Real-time Evaluation** - Immediate feedback on answers
 - 📈 **Comprehensive Reports** - Detailed assessment and recommendations
 - 🎤 **Speech-to-Text** - High accuracy audio transcription using Whisper
+- 🔴 **Real-time Transcription** - WebSocket streaming with OpenAI Realtime API
 
 ### Interview Flow:
 1. Start interview with configuration
