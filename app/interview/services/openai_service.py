@@ -490,13 +490,13 @@ Generate the final assessment report."""
             "duration": getattr(response, "duration", None),
             "segments": [
                 {
-                    "id": seg.id,
-                    "start": seg.start,
-                    "end": seg.end,
-                    "text": seg.text,
+                    "id": seg.get("id") if isinstance(seg, dict) else getattr(seg, "id", i),
+                    "start": seg.get("start") if isinstance(seg, dict) else getattr(seg, "start", 0),
+                    "end": seg.get("end") if isinstance(seg, dict) else getattr(seg, "end", 0),
+                    "text": seg.get("text") if isinstance(seg, dict) else getattr(seg, "text", ""),
                 }
-                for seg in getattr(response, "segments", [])
-            ] if hasattr(response, "segments") else None,
+                for i, seg in enumerate(getattr(response, "segments", []) or [])
+            ] if hasattr(response, "segments") and response.segments else None,
         }
 
 
