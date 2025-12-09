@@ -13,7 +13,13 @@ from typing import Annotated
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
-import websockets
+
+# Optional websockets import (not available on serverless platforms)
+try:
+    import websockets
+    WEBSOCKETS_AVAILABLE = True
+except ImportError:
+    WEBSOCKETS_AVAILABLE = False
 
 from app.core.config import settings
 from app.interview.services.openai_service import get_openai_service
@@ -218,8 +224,20 @@ async def realtime_transcription(websocket: WebSocket):
     - {"type": "transcript", "text": "...", "is_final": true} - Final transcript
     - {"type": "error", "message": "..."} - Error occurred
     - {"type": "closed"} - Session ended
+    
+    **Note:** This endpoint requires a persistent connection and is not available
+    on serverless platforms like Vercel. Use POST /api/speech/transcribe instead.
     """
     await websocket.accept()
+    
+    # Check if websockets library is available (not on serverless)
+    if not WEBSOCKETS_AVAILABLE:
+        await websocket.send_json({
+            "type": "error",
+            "message": "Real-time transcription not available on this platform. Use POST /api/speech/transcribe instead."
+        })
+        await websocket.close()
+        return
     
     # Check API key
     if not settings.openai_api_key:
