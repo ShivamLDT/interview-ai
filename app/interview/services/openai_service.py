@@ -5,9 +5,10 @@ Handles all interactions with the OpenAI API including:
 - Question generation
 - Answer evaluation
 - Final report generation
+- Speech-to-text transcription
 """
 import json
-from typing import Any
+from typing import Any, BinaryIO
 
 from openai import AsyncOpenAI
 
@@ -448,6 +449,55 @@ Generate the final assessment report."""
             return difficulty_order[current_index - 1]
         
         return current_difficulty
+
+    async def transcribe_audio(
+        self,
+        audio_file: BinaryIO,
+        filename: str,
+        language: str | None = None,
+        prompt: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        Transcribe audio to text using OpenAI's Whisper API.
+        
+        Args:
+            audio_file: Audio file binary stream
+            filename: Original filename (needed for format detection)
+            language: Optional ISO-639-1 language code (e.g., 'en', 'es', 'fr')
+            prompt: Optional prompt to guide transcription style/context
+            
+        Returns:
+            Dictionary with transcription text and metadata
+        """
+        # Prepare optional parameters
+        kwargs = {}
+        if language:
+            kwargs["language"] = language
+        if prompt:
+            kwargs["prompt"] = prompt
+        
+        # Use whisper-1 model for high accuracy and speed
+        response = await self.client.audio.transcriptions.create(
+            model="whisper-1",
+            file=(filename, audio_file),
+            response_format="verbose_json",
+            **kwargs,
+        )
+        
+        return {
+            "text": response.text,
+            "language": getattr(response, "language", None),
+            "duration": getattr(response, "duration", None),
+            "segments": [
+                {
+                    "id": seg.id,
+                    "start": seg.start,
+                    "end": seg.end,
+                    "text": seg.text,
+                }
+                for seg in getattr(response, "segments", [])
+            ] if hasattr(response, "segments") else None,
+        }
 
 
 # Singleton instance

@@ -25,6 +25,9 @@ email-validator==2.1.0.post1
 # OpenAI SDK
 openai==1.12.0
 
+# File uploads
+python-multipart==0.0.9
+
 # Development
 httpx==0.26.0
 

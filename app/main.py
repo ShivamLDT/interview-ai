@@ -12,6 +12,7 @@ from app.auth.router import router as auth_router
 from app.core.config import settings
 from app.core.database import create_db_and_tables
 from app.interview.router import router as interview_router
+from app.speech.router import router as speech_router
 
 
 @asynccontextmanager
@@ -49,6 +50,7 @@ A FastAPI backend for conducting AI-powered technical interviews.
 - 📊 **Adaptive Difficulty** - Questions adjust based on performance
 - 📝 **Real-time Evaluation** - Immediate feedback on answers
 - 📈 **Comprehensive Reports** - Detailed assessment and recommendations
+- 🎤 **Speech-to-Text** - High accuracy audio transcription using Whisper
 
 ### Interview Flow:
 1. Start interview with configuration
@@ -74,6 +76,7 @@ A FastAPI backend for conducting AI-powered technical interviews.
     # Include routers
     app.include_router(auth_router, prefix="/auth")
     app.include_router(interview_router, prefix="/api")
+    app.include_router(speech_router, prefix="/api")
 
     return app
 
